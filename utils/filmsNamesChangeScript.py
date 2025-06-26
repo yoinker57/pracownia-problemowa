@@ -11,7 +11,7 @@ movies = []
 for filename in os.listdir(folder_path):
     if filename.lower().endswith(video_extensions):
         old_path = os.path.join(folder_path, filename)
-        new_filename = filename.replace("_", "")
+        new_filename = filename.replace(" ", "")
         new_path = os.path.join(folder_path, new_filename)
         
         if old_path != new_path:
