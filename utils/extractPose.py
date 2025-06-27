@@ -4,6 +4,7 @@ from ultralytics import YOLO
 from pathlib import Path
 import numpy as np
 import time
+import argparse
 
 # ========== KONFIGURACJA ==========
 SHOW_SKELETON = True
@@ -71,10 +72,20 @@ def detect_people(frame, conf_threshold=0.25, imgsz=640):
     
     return boxes, keypoints
 
-video_folder = Path("./")
+# Setup argument parser
+parser = argparse.ArgumentParser(description="Process ski videos.")
+parser.add_argument(
+    "--video_folder",
+    type=str,
+    default="../git_films",
+    help="Path to the folder containing ski videos"
+)
+
+args = parser.parse_args()
+video_folder = Path(args.video_folder)
 video_files = list(video_folder.glob("*.mp4"))
 
-output_folder = Path("pose_outputs_clicked")
+output_folder = Path("../pose_outputs_clicked")
 output_folder.mkdir(exist_ok=True)
 
 # Globalne zmienne do obsługi interakcji
