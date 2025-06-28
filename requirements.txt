@@ -2,3 +2,7 @@ moviepy==1.0.3
 opencv-contrib-python
 ultralytics
 pandas
+torch
+sklearn
+tslearn
+numpy
