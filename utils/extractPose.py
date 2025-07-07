@@ -15,7 +15,7 @@ USE_FULL_FRAME_DETECTION = True
 REACQUIRE_INTERVAL = 1.0  # Co ile sekund próbować ponownie wykryć osobę
 # ==================================
 
-model = YOLO("yolov8m-pose.pt")
+model = YOLO("yolov11n-pose.pt").to("cuda").half()
 
 SKELETON_CONNECTIONS = [
     (0, 1), (0, 2), (1, 3), (2, 4),
@@ -77,7 +77,7 @@ parser = argparse.ArgumentParser(description="Process ski videos.")
 parser.add_argument(
     "--video_folder",
     type=str,
-    default="../git_films",
+    default="../../trimmed_films",
     help="Path to the folder containing ski videos"
 )
 
@@ -104,7 +104,7 @@ def update_frame_pos(pos):
     global current_frame_idx
     current_frame_idx = pos
 
-for video_file in video_files:
+for video_file in video_files[:5]:
     print(f"Przetwarzanie: {video_file.name}")
     cap = cv2.VideoCapture(str(video_file))
     if not cap.isOpened():
@@ -447,7 +447,7 @@ for video_file in video_files:
 
     # Zapis do CSV
     df = pd.DataFrame(all_keypoints)
-    output_path = output_folder / f"{video_file.stem}_clicked.csv"
+    output_path = output_folder / f"{video_file.stem}.csv"
     df.to_csv(output_path, index=False)
     print(f"Zapisano: {output_path}")
     
@@ -461,6 +461,22 @@ for video_file in video_files:
     print(f"- Klatki z utraconym śledzeniem: {nan_frames}")
     print(f"- Współczynnik wykrywania: {detection_rate:.2f}%")
     print(f"Czas przetwarzania: {time.time()-start_time:.2f}s")
+    # Ścieżka do pliku statystyk
+    stats_path = output_folder / "stats.csv"
+    
+    # Utwórz DataFrame z wpisem
+    stats_entry = pd.DataFrame([{
+        "file": video_file.stem,
+        "percent_of_detection": round(detection_rate, 2)
+    }])
+    
+    # Dopisz lub utwórz plik
+    if stats_path.exists():
+        stats_entry.to_csv(stats_path, mode='a', header=False, index=False)
+    else:
+        stats_entry.to_csv(stats_path, mode='w', header=True, index=False)
+    
+    print(f"Zaktualizowano statystyki w pliku: {stats_path}")
 
 # Zamknięcie wszystkich okien na końcu
 cv2.destroyAllWindows()
