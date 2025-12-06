@@ -9,8 +9,8 @@ time_data['startPhoneTime'] = pd.to_datetime(time_data['startPhoneTime'])
 time_data['serverTime'] = pd.to_datetime(time_data['serverTime'])
 
 # Foldery
-films_dir = Path("../../films")
-output_dir = Path("../../trimmed_films")
+films_dir = Path("../../new_films")
+output_dir = Path("../../data4")
 output_dir.mkdir(exist_ok=True)
 
 labeled_rows = []
@@ -30,7 +30,7 @@ for _, row in time_data.iterrows():
         data_path = None
 
         for device_folder in device_folders:
-            potential_path = Path(f"../../SkiTurnDetection/data/turns_with_styles/{device_folder}/{date_str}/{part}.csv")
+            potential_path = Path(f"../../SkiTurnDetection/data/turns_labeled/{device_folder}/{date_str}/{part}.csv")
             if potential_path.exists():
                 data_path = potential_path
                 try:
@@ -62,11 +62,16 @@ for _, row in time_data.iterrows():
             trim_start_seconds = (abs_first - start_phone_time).total_seconds()
             trim_end_seconds = (abs_last - start_phone_time).total_seconds()
 
-            part_name = f"{movie_name.replace('.mp4', '')}_{i}.mp4" if len(data_files) > 1 else movie_name
+            # Utwórz strukturę katalogów
+            specific_output_dir = output_dir / device_folder / date_str / part
+            specific_output_dir.mkdir(parents=True, exist_ok=True)
+
+            output_video_path = specific_output_dir / "movie.mp4"
+            output_csv_path = specific_output_dir / "sensors.csv"
 
             style_row = filtered[filtered['Status'] == 'START'].iloc[0]
             labeled_rows.append({
-                "movieName": 'trimmed_' + part_name,
+                "movieName": str(Path(device_folder) / date_str / part / "movie.mp4"),
                 "STYLE": style_row.get("STYLE", ""),
                 "SKIER_LEVEL": style_row.get("SKIER_LEVEL", ""),
                 "SLOPE": style_row.get("SLOPE", ""),
@@ -74,15 +79,19 @@ for _, row in time_data.iterrows():
                 "end_sec": round(trim_end_seconds, 2)
             })
 
-            print(f"{part_name} — przyciąć od {trim_start_seconds:.2f}s do {trim_end_seconds:.2f}s")
+            print(f"{output_video_path} — przyciąć od {trim_start_seconds:.2f}s do {trim_end_seconds:.2f}s")
+
+            # Zapisz sensory (przycięte do czasu trwania wideo)
+            sensors_df = df[(df['time'] >= first_start) & (df['time'] <= last_stop)]
+            sensors_df.to_csv(output_csv_path, index=False)
+            print(f"Zapisano sensory do {output_csv_path}")
 
             # Przytnij wideo
             input_path = films_dir / movie_name
-            output_path = output_dir / f"trimmed_{part_name}"
-
+            
             if input_path.exists():
                 clip = VideoFileClip(str(input_path)).subclip(trim_start_seconds, trim_end_seconds)
-                clip.write_videofile(str(output_path), codec="libx264", audio=False)
+                clip.write_videofile(str(output_video_path), codec="libx264", audio=False)
                 clip.close()
             else:
                 print(f"Brak filmu: {input_path}")
